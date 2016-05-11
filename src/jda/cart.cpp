@@ -81,7 +81,8 @@ void Cart::SplitNode(const DataSet& pos, const vector<int>& pos_idx, \
         }
       }
     }
-
+    
+//    scores[idx] = (pos_w-neg_w)/(pos_w+neg_w);
     scores[idx] = 0.5*(log(pos_w) - log(neg_w));
     printf("Leaf % 3d has % 7d pos and % 7d neg. Score is %.4lf\n", \
            node_idx, pos_n, neg_n, scores[idx]);
@@ -223,11 +224,24 @@ void Cart::SplitNodeWithClassification(const DataSet& pos, const vector<int>& po
       const double n_ratio = double(current_n) / neg_n;
       if (p_ratio < 0.1 || p_ratio > 0.9) continue;
       if (n_ratio < 0.1 || n_ratio > 0.9) continue;
+/*
+      float leftFit, rightFit;
+      if(wp_l + wn_l <= 0) leftFit = 0.0f;
+      else leftFit = (wp_l - wn_l) / (wp_l + wn_l);
 
-      double w_l = wp_l + wn_l;
-      double w_r = wp_r + wn_r;
-      double e = (w_l / w)*calcEntropy(wp_l / w_l) + \
-                 (w_r / w)*calcEntropy(wp_r / w_r);
+      if(wp_r + wn_r <= 0) rightFit = 0.0f;
+      else rightFit = (wp_r - wn_r) / (wp_r + wn_r);
+
+      float leftMSE = wp_l * (leftFit - 1) * (leftFit - 1) + wn_l * (leftFit + 1) * (leftFit + 1); 
+      float rightMSE = wp_r * (rightFit - 1) * (rightFit - 1) + wn_r * (rightFit + 1) * (rightFit + 1); 
+
+      float e = leftMSE + rightMSE;
+      */
+
+      float w_l = wp_l + wn_l;
+      float w_r = wp_r + wn_r;
+      float e = (w_l / w)*calcEntropy(wp_l / w_l) + \
+                  (w_r / w)*calcEntropy(wp_r / w_r);
       if (e < entropy) {
         entropy = e;
         threshold_ = th;
