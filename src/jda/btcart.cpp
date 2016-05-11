@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <omp.h>
 #include <cstdlib>
 #include <liblinear/linear.h>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -236,6 +237,7 @@ void BoostCart::Train(DataSet& pos, DataSet& neg) {
   vector<Mat_<int> > pos_lbf(pos_n);
   vector<Mat_<int> > neg_lbf(neg_n);
 
+  omp_set_num_threads(c.numThreads);
   #pragma omp parallel for
   for (int i = 0; i < pos_n; i++) {
     pos_lbf[i] = GenLBF(pos.imgs[i], pos.current_shapes[i]);
@@ -326,6 +328,7 @@ void BoostCart::GlobalRegression(const vector<Mat_<int> >& lbf, const Mat_<doubl
   param.p = 0;
   param.eps = 0.0001;
 
+  omp_set_num_threads(c.numThreads);
   #pragma omp parallel for
   for (int i = 0; i < landmark_n; i++) {
     struct problem prob_ = prob;

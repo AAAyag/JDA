@@ -257,7 +257,7 @@ Config::Config() {
   }
 
   // random generator pool
-  int rng_size = 2 * omp_get_max_threads();
+  int rng_size = 2 * numThreads;
   rng_pool.reserve(rng_size);
   for (int i = 0; i < rng_size; i++) {
     rng_pool.push_back(RNG(cv::getTickCount()));

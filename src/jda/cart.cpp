@@ -37,12 +37,14 @@ Cart::~Cart() {
 }
 
 void Cart::Train(const DataSet& pos, const DataSet& neg) {
+  const Config& c = Config::GetInstance();
   vector<int> pos_idx, neg_idx;
   int pos_n = pos.size;
   int neg_n = neg.size;
   pos_idx.resize(pos_n);
   neg_idx.resize(neg_n);
 
+  omp_set_num_threads(c.numThreads);
   #pragma omp parallel for
   for (int i = 0; i < pos_n; i++) pos_idx[i] = i;
   #pragma omp parallel for
@@ -184,6 +186,7 @@ void Cart::SplitNodeWithClassification(const DataSet& pos, const vector<int>& po
   vector<double> es_(feature_n);
   vector<int> ths_(feature_n);
 
+  omp_set_num_threads(c.numThreads);
   #pragma omp parallel for
   for (int i = 0; i < feature_n; i++) {
     double wp_l, wp_r, wn_l, wn_r;
@@ -299,6 +302,7 @@ void Cart::SplitNodeWithRegression(const DataSet& pos, const vector<int>& pos_id
   vector<double> vs_(feature_n);
   vector<int> ths_(feature_n);
 
+  omp_set_num_threads(c.numThreads);
   #pragma omp parallel for
   for (int i = 0; i < feature_n; i++) {
     RNG& rng = c.rng_pool[omp_get_thread_num() + 1];
@@ -342,6 +346,7 @@ void Cart::GenFeaturePool(vector<Feature>& feature_pool) {
   const int landmark_n = c.landmark_n;
   feature_pool.resize(featNum);
 
+  omp_set_num_threads(c.numThreads);
   #pragma omp parallel for
   for (int i = 0; i < featNum; i++) {
     RNG& rng = c.rng_pool[omp_get_thread_num() + 1];

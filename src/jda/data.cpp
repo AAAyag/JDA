@@ -33,6 +33,7 @@ DataSet::~DataSet() {}
 
 Mat_<int> DataSet::CalcFeatureValues(const vector<Feature>& feature_pool, \
                                      const vector<int>& idx) const {
+  const Config& c = Config::GetInstance();
   const int n = feature_pool.size();
   const int m = idx.size();
 
@@ -46,6 +47,7 @@ Mat_<int> DataSet::CalcFeatureValues(const vector<Feature>& feature_pool, \
     const Feature& feature = feature_pool[i];
     int* ptr = features.ptr<int>(i);
 
+    omp_set_num_threads(c.numThreads);
     #pragma omp parallel for
     for (int j = 0; j < m; j++) {
       const Mat& img = imgs[idx[j]];
@@ -60,12 +62,14 @@ Mat_<int> DataSet::CalcFeatureValues(const vector<Feature>& feature_pool, \
 }
 
 Mat_<double> DataSet::CalcShapeResidual(const vector<int>& idx) const {
+  const Config& c = Config::GetInstance();
   JDA_Assert(is_pos == true, "Negative Dataset can not use `CalcShapeResidual`");
   const int n = idx.size();
   // all landmark
   const int landmark_n = gt_shapes[0].cols / 2;
   Mat_<double> shape_residual(n, landmark_n * 2);
 
+  omp_set_num_threads(c.numThreads);
   #pragma omp parallel for
   for (int i = 0; i < n; i++) {
     shape_residual.row(i) = gt_shapes[idx[i]] - current_shapes[idx[i]];
@@ -73,11 +77,13 @@ Mat_<double> DataSet::CalcShapeResidual(const vector<int>& idx) const {
   return shape_residual;
 }
 Mat_<double> DataSet::CalcShapeResidual(const vector<int>& idx, int landmark_id) const {
+  const Config& c = Config::GetInstance();
   JDA_Assert(is_pos == true, "Negative Dataset can not use `CalcShapeResidual`");
   const int n = idx.size();
   // specific landmark
   Mat_<double> shape_residual(n, 2);
 
+  omp_set_num_threads(c.numThreads);
   #pragma omp parallel for
   for (int i = 0; i < n; i++) {
     shape_residual(i, 0) = gt_shapes[idx[i]](0, 2 * landmark_id) - \
@@ -114,6 +120,7 @@ void DataSet::RandomShapes(const Mat_<double>& mean_shape, vector<Mat_<double> >
   Config& c = Config::GetInstance();
   const int n = shapes.size();
   const int landmark_n = c.landmark_n;
+  omp_set_num_threads(c.numThreads);
   #pragma omp parallel for
   for (int i = 0; i < n; i++) {
     RNG& rng = c.rng_pool[omp_get_thread_num() + 1];
@@ -129,14 +136,17 @@ void DataSet::RandomShapes(const Mat_<double>& mean_shape, vector<Mat_<double> >
 }
 
 void DataSet::UpdateWeights() {
+  const Config& c = Config::GetInstance();
   const double flag = -(is_pos ? 1 : -1);
 
+  omp_set_num_threads(c.numThreads);
   #pragma omp parallel for
   for (int i = 0; i < size; i++) {
     weights[i] = exp(flag*scores[i]);
   }
 }
 void DataSet::UpdateWeights(DataSet& pos, DataSet& neg) {
+  const Config& c = Config::GetInstance();
   pos.UpdateWeights();
   neg.UpdateWeights();
   // normalize to 1
@@ -146,6 +156,7 @@ void DataSet::UpdateWeights(DataSet& pos, DataSet& neg) {
   double sum_neg_w = 0.;
   double sum_w = 0.;
 
+  omp_set_num_threads(c.numThreads);
   #pragma omp parallel sections
   {
     #pragma omp section
@@ -177,6 +188,8 @@ void DataSet::UpdateWeights(DataSet& pos, DataSet& neg) {
 }
 
 void DataSet::UpdateScores(const Cart& cart) {
+  const Config& c = Config::GetInstance();
+  omp_set_num_threads(c.numThreads);
   #pragma omp parallel for
   for (int i = 0; i < size; i++) {
     const Mat& img = imgs[i];
@@ -274,6 +287,8 @@ void DataSet::_QSort_(int left, int right) {
 }
 
 void DataSet::ResetScores() {
+  const Config& c = Config::GetInstance();
+  omp_set_num_threads(c.numThreads);
   #pragma omp parallel for
   for (int i = 0; i < size; i++) {
     scores[i] = last_scores[i];
@@ -295,8 +310,10 @@ void DataSet::Clear() {
 }
 
 void DataSet::Dump(const string& dir) const {
+  const Config& c = Config::GetInstance();
   const int n = size;
 
+  omp_set_num_threads(c.numThreads);
   #pragma omp parallel for
   for (int i = 0; i < size; i++) {
     char buff[300];
@@ -508,6 +525,7 @@ void DataSet::LoadPositiveDataSet(const string& positive) {
   imgs_quarter.resize(size);
   gt_shapes.resize(size);
 
+  omp_set_num_threads(c.numThreads);
   #pragma omp parallel for
   for (int i = 0; i < n; i++) {
     // face image should be a sqaure
