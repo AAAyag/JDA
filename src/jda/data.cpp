@@ -425,7 +425,7 @@ void DataSet::MoreNegSamples(int pos_size, double nps){
           imgs_quarter.push_back(img_q);
           current_shapes.push_back(shape);
           scores.push_back(score);
-          last_scores.push_back(0);
+          last_scores.push_back(score);
           weights.push_back(0);
           gets++;
         }
@@ -590,7 +590,7 @@ void DataSet::LoadNegativeDataSet(const vector<string>& negative,int pos_size) {
   Clear();
   if(c.use_hard){
     int gets = 0;
-    printf("Load Hard Negative\n");
+    LOG("Load Hard Negative");
     file = fopen(negative[0].c_str(), "r");
     while (fscanf(file, "%s", buff ) > 0 && gets < pos_size) {
       Mat hd = imread(buff,CV_LOAD_IMAGE_GRAYSCALE);
@@ -609,8 +609,10 @@ void DataSet::LoadNegativeDataSet(const vector<string>& negative,int pos_size) {
         current_shapes.push_back(shape);
         scores.push_back(score);
         weights.push_back(0);
+        last_scores.push_back(score);
         gets ++;
       }
+      LOG("%d",gets);
     }
     size = imgs.size();
     fclose(file);
