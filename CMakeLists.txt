@@ -9,3 +9,5 @@ file(GLOB SRC src/*.cpp)
 
 add_executable(jda ${SRC})
 target_link_libraries(jda libjda ${OpenCV_LIBS})
+
+SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
