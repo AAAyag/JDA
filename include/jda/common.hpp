@@ -113,6 +113,7 @@ public:
 
 public:
   // parameters of `Config`, see initialization in `common.cpp::Config()`
+  int numThreads;
   /*! \breif stages */
   int T;
   /*! \breif number of boost carts in each stage */

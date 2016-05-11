@@ -13,56 +13,6 @@ class Feature;
 class JoinCascador;
 
 /*!
- * \breif Negative Training Sample Generator
- *  hard negative training sample will be needed if less negative alives
- */
-class NegGenerator {
-public:
-  NegGenerator();
-  ~NegGenerator();
-
-public:
-  /*!
-   * \breif Generate more negative samples
-   *  We will generate negative training samples from origin images, all generated samples
-   *  should be hard enough to get through all stages of Join Cascador in current training
-   *  state, it may be very hard to generate enough hard negative samples, we may fail with
-   *  real size smaller than `int size`. We will give back all negative training samples with
-   *  their scores and current shapes for further training.
-   *
-   * \note OpenMP supported hard negative mining, we may have `real size` > `size`
-   *
-   * \param join_cascador   JoinCascador in training
-   * \param size            how many samples we need
-   * \param imgs            negative samples
-   * \param scores          scores of negative samples
-   * \param shapes          shapes of samples, for training
-   * \return                real size
-   */
-  int Generate(const JoinCascador& joincascador, int size, \
-               std::vector<cv::Mat>& imgs, std::vector<double>& scores, \
-               std::vector<cv::Mat_<double> >& shapes);
-  /*!
-   * \breif Load nagetive image file list from path
-   * \param path    background image file list
-   */
-  void Load(const std::vector<std::string>& path);
-
-public:
-  /*! \breif background image list */
-  std::vector<std::string> list;
-  int current_idx;
-  /*! \breif hard negative list */
-  std::vector<cv::Mat> hds;
-  int current_hd_idx;
-  int times;
-  /*! \breif augment */
-  int should_flip;
-  int rotation_angle;
-  int reset_times;
-};
-
-/*!
  * \breif DataSet Wrapper
  */
 class DataSet {
@@ -89,7 +39,7 @@ public:
    *
    * \param negative    negative text list
    */
-  void LoadNegativeDataSet(const std::vector<std::string>& negative);
+  void LoadNegativeDataSet(const std::vector<std::string>& negative, int pos_size);
   /*!
    * \breif Wrapper for `LoadPositiveDataSet` and `LoadNegative DataSet`
    *  Since positive dataset and negative dataset may share some information between
@@ -199,9 +149,9 @@ public:
    */
   void Dump(const std::string& dir) const;
 
+  cv::Mat NextImage(int i);
+
 public:
-  /*! \breif generator for more negative samples */
-  NegGenerator neg_generator;
   /*! \breif face/none-face images */
   std::vector<cv::Mat> imgs;
   std::vector<cv::Mat> imgs_half;
@@ -224,6 +174,17 @@ public:
   bool is_sorted;
   /*! \breif size of dataset */
   int size;
+
+ public:
+  std::vector<std::string> list;
+  std::vector<cv::Mat> NegImgs;
+  int current_id[40];
+  int x[40];
+  int y[40];
+  double factor[40];
+  int step[40];
+  int tranType[40];
+  int win[40];
 };
 
 } // namespace jda

@@ -154,6 +154,7 @@ Config::Config() {
   jsmn::Object json_config = jsmn::parse("../config.json");
 
   // model meta data
+  numThreads = json_config["Threads"].unwrap<Number>();
   T = json_config["T"].unwrap<Number>();
   K = json_config["K"].unwrap<Number>();
   landmark_n = json_config["landmark_n"].unwrap<Number>();
