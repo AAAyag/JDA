@@ -377,8 +377,9 @@ static void detectMultiScale1(const JoinCascador& joincascador, const Mat& img, 
  * \param overlap   overlap threshold
  * \return          picked index
  */
+/*
 static vector<int> nms(const vector<Rect>& rects, const vector<double>& scores, \
-                       double overlap) {
+                       vector<int>& Srect, double overlap) {
   const int n = rects.size();
   vector<double> areas(n);
 
@@ -420,6 +421,223 @@ static vector<int> nms(const vector<Rect>& rects, const vector<double>& scores, 
   picked.resize(picked_n);
   return picked;
 }
+*/
+vector<double> Logistic(vector<double> scores ,vector<int> index);
+int Partation(Mat predicate,vector<int>& label);
+int Find(vector<int>& parent,int x);
+
+vector<int> nms(vector<Rect>& rects, vector<double>& scores, vector<int>& Srect, double overlap, Mat Img, vector<Mat_<double> >& shapes) {
+  int numCandidates = rects.size();
+  Mat predicate = Mat::eye(numCandidates,numCandidates,IPL_DEPTH_1U);
+  for(int i = 0;i<numCandidates;i++){
+    for(int j = i+1;j<numCandidates;j++){
+      int h = min(rects[i].y+rects[i].height,rects[j].y+rects[j].height) - max(rects[i].y,rects[j].y);
+      int w = min(rects[i].x+rects[i].width,rects[j].x+rects[j].width) - max(rects[i].x,rects[j].x);
+      int s = max(h,0)*max(w,0);
+
+      if ((double)s/(double)(rects[i].width*rects[i].height+rects[j].width*rects[j].height-s)>=overlap){
+        predicate.at<bool>(i,j) = 1;
+        predicate.at<bool>(j,i) = 1;
+      }
+    }
+  }
+
+  vector<int> label;
+
+  int numLabels = Partation(predicate,label);
+
+  vector<Rect> Rects;
+  vector<Mat_<double> > Shapes;
+  Srect.resize(numLabels);
+  vector<int> neighbors;
+  neighbors.resize(numLabels);
+  vector<double> Score;
+  Score.resize(numLabels);
+
+  for(int i = 0;i<numLabels;i++){
+    vector<int> index;
+    for(int j = 0;j<numCandidates;j++){
+      if(label[j]==i)
+        index.push_back(j);
+    }
+    vector<double> weight;
+    weight = Logistic(scores,index);
+    double sumScore=0;
+    for(int j=0;j<weight.size();j++)
+      sumScore+=weight[j];
+    Score[i] = sumScore;
+    neighbors[i]=index.size();
+
+    if (sumScore == 0){
+      for(int j=0;j<weight.size();j++)
+        weight[j] = 1/sumScore;
+    }
+    else{
+      for(int j=0;j<weight.size();j++)
+        weight[j] = weight[j]/sumScore;
+    }
+    double size = 0;
+    double col = 0;
+    double row = 0;
+    for(int j=0;j<index.size();j++){
+      size += rects[index[j]].width*weight[j];
+    }
+    Srect[i] = (int)floor(size);
+    for(int j=0;j<index.size();j++){
+      col += (rects[index[j]].x + rects[index[j]].width/2)*weight[j];
+      row += (rects[index[j]].y + rects[index[j]].width/2)*weight[j];
+    }
+    const int landmark_n = shapes[0].cols / 2;
+    Mat_<double> shape = Mat_<double>::zeros(1,2*landmark_n);
+    for (int j = 0; j < landmark_n; j++) {
+      for(int l = 0; l < index.size(); l++){
+        shape(0, 2 * j) += shapes[index[l]](0, 2 * j)*weight[l];
+        shape(0, 2 * j + 1) += shapes[index[l]](0, 2 * j + 1)*weight[l];
+      }
+    }
+    int x = floor(col-size/2);
+    int y = floor(row-size/2);
+    Rect roi(x,y,Srect[i],Srect[i]);
+    Shapes.push_back(shape);
+    Rects.push_back(roi);
+  }
+
+
+  predicate = Mat::zeros(numLabels,numLabels,IPL_DEPTH_1U);
+
+  for(int i = 0;i<numLabels;i++){
+    for(int j = i+1;j<numLabels;j++){
+      int h = min(Rects[i].y+Rects[i].height,Rects[j].y+Rects[j].height) - max(Rects[i].y,Rects[j].y);
+      int w = min(Rects[i].x+Rects[i].width,Rects[j].x+Rects[j].width) - max(Rects[i].x,Rects[j].x);
+      int s = max(h,0)*max(w,0);
+
+      if((double)s/(double)(Rects[i].width*Rects[i].height)>=overlap || (double)s/(double)(Rects[j].width*Rects[j].height)>=overlap)
+      {
+        predicate.at<bool>(i,j) = 1;
+        predicate.at<bool>(j,i) = 1;
+      }
+    }
+  }
+
+  vector<int> flag;
+  flag.resize(numLabels);
+  for(int i = 0;i<numLabels;i++)
+    flag[i]=1;
+
+  for(int i = 0;i<numLabels;i++){
+    vector<int> index;
+    for(int j = 0;j<numLabels;j++){
+      if(predicate.at<bool>(j,i)==1)
+        index.push_back(j);
+    }
+    if(index.size()==0)
+      continue;
+
+    double s = 0;
+    for(int j  = 0;j<index.size();j++){
+      if(Score[index[j]]>s)
+        s = Score[index[j]];
+    }
+    if(s>Score[i])
+      flag[i]=0;
+  }
+
+  vector<int> picked;
+  for(int i = 0;i<numLabels;i++){
+    if(flag[i]){
+      picked.push_back(i);
+    }
+  }
+
+  int height = Img.rows;
+  int width = Img.cols;
+
+  for(int i = 0;i<picked.size();i++){
+    int idx = picked[i];
+    if(Rects[idx].x<0)
+      Rects[idx].x = 0;
+
+    if(Rects[idx].y<0)
+      Rects[idx].y = 0;
+
+    if(Rects[idx].y+Rects[idx].height>height)
+      Rects[idx].height = height-Rects[idx].y;
+
+    if(Rects[idx].x+Rects[idx].width>width)
+      Rects[idx].width= width-Rects[idx].x;
+  }
+  rects = Rects;
+  shapes = Shapes;
+  scores = Score;
+  return picked;
+}
+
+vector<double> Logistic(vector<double> scores ,vector<int> index){
+  vector<double> Y;
+  for(int i = 0;i<index.size();i++){
+    double tmp_Y = log(1+exp(scores[index[i]]));
+    if(isinf(tmp_Y))
+      tmp_Y = scores[index[i]];
+    Y.push_back(tmp_Y);
+  }
+  return Y;
+}
+
+int Partation(Mat predicate,vector<int>& label){
+  int N = predicate.cols;
+  vector<int> parent;
+  vector<int> rank;
+  for(int i=0;i<N;i++){
+    parent.push_back(i);
+    rank.push_back(0);
+  }
+
+  for(int i=0;i<N;i++){
+    for(int j=0;j<N;j++){
+      if (predicate.at<bool>(i,j)==0)
+        continue;
+      int root_i = Find(parent,i);
+      int root_j = Find(parent,j);
+
+      if(root_j != root_i){
+        if (rank[root_j] < rank[root_i])
+          parent[root_j] = root_i;
+        else if (rank[root_j] > rank[root_i])
+          parent[root_i] = root_j;
+        else{
+          parent[root_j] = root_i;
+          rank[root_i] = rank[root_i] + 1;
+        }
+      }
+    }
+  }
+
+  int nGroups = 0;
+  label.resize(N);
+  for(int i=0;i<N;i++){
+    if(parent[i]==i){
+      label[i] = nGroups;
+      nGroups++;
+    }
+    else label[i] = -1;
+  }
+
+  for(int i=0;i<N;i++){
+    if(parent[i]==i)
+      continue;
+    int root_i = Find(parent,i);
+    label[i]=label[root_i];
+  }
+
+  return nGroups;
+}
+
+int Find(vector<int>& parent,int x){
+  int root = parent[x];
+  if(root != x)
+    root = Find(parent,root);
+  return root;
+}
 
 int JoinCascador::Detect(const Mat& img, vector<Rect>& rects, vector<double>& scores, \
                          vector<Mat_<double> >& shapes, DetectionStatisic& statisic) const {
@@ -438,14 +656,18 @@ int JoinCascador::Detect(const Mat& img, vector<Rect>& rects, vector<double>& sc
   //const double overlap = 0.3;
   const double overlap = c.fddb_overlap;
   vector<int> picked;
+  vector<int> Srect;
   if (c.fddb_nms) {
-    picked = nms(rects_, scores_, overlap);
+    picked = nms(rects_, scores_, Srect, overlap, img, shapes_);
   }
   else {
     const int n = rects_.size();
+    for(int i = 0;i<n;i++)
+      Srect.push_back(rects_[i].width);
     picked.resize(n);
     for (int i = 0; i < n; i++) picked[i] = i;
   }
+
   const int n = picked.size();
   rects.resize(n);
   scores.resize(n);
@@ -464,6 +686,23 @@ int JoinCascador::Detect(const Mat& img, vector<Rect>& rects, vector<double>& sc
     rects[i] = rect;
     shapes[i] = shape;
     scores[i] = scores_[index];
+  }
+
+  int imgWidth = img.cols;
+  int imgHeight = img.rows;
+
+  for(int i = 0;i<picked.size();i++){
+    int idx = picked[i];
+    int delta = floor(Srect[idx]*0.1);
+    int y0 = max(rects_[idx].y - floor(3.0 * delta),0.);
+    int y1 = min(rects_[idx].y + Srect[idx],imgHeight);
+    int x0 = max(rects_[idx].x + floor(0.25 * delta),0.);
+    int x1 = min(rects_[idx].x + Srect[idx] - floor(0.25 * delta),(double)imgWidth);
+
+    rects_[idx].y = y0;
+    rects_[idx].x = x0;
+    rects_[idx].width = x1-x0 + 1;
+    rects_[idx].height = y1-y0 + 1;
   }
 
   return n;

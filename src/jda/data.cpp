@@ -327,58 +327,58 @@ Mat DataSet::NextImage(int i) {
       win[i]*=factor[i];
       if(win[i]>width || win[i]>height){
         win[i]=c.img_q_size;
-        tranType[i]++;
-        if(tranType[i]>7){
-          tranType[i] = 0;
-          current_id[i]+=c.numThreads;
-          if(current_id[i]>=list.size()){
-            current_id[i]=i;
-            Mat tmg = imread(list[current_id[i]],CV_LOAD_IMAGE_GRAYSCALE);
-            NegImgs[i] = tmg.clone();
+        current_id[i]+=c.numThreads;
+        if(current_id[i]>=list.size()){
+          current_id[i]=i;
+          Mat tmg = imread(list[current_id[i]],CV_LOAD_IMAGE_GRAYSCALE);
+          NegImgs[i] = tmg.clone();
+          tranType[i]++;
+          if(tranType[i]>7){
+            tranType[i] = 0;
             srand(time(0)+i);
             factor[i] = 1.+(double)(rand()%50)/100.0;
             step[i] = 12+rand()%12;
           }
           else{
-            Mat tmg = imread(list[current_id[i]],CV_LOAD_IMAGE_GRAYSCALE);
-            NegImgs[i] = tmg.clone();
+            switch(tranType[i]){
+              case 0:
+                break;
+              case 1:
+                flip(NegImgs[i], NegImgs[i], 0);
+                transpose(NegImgs[i], NegImgs[i]);
+                break;
+              case 2:
+                flip(NegImgs[i], NegImgs[i], -1);
+                break;
+              case 3:
+                flip(NegImgs[i], NegImgs[i], 1);
+                transpose(NegImgs[i], NegImgs[i]);
+                break;
+              case 4:
+                flip(NegImgs[i], NegImgs[i], 1);
+                break;
+              case 5:
+                flip(NegImgs[i], NegImgs[i], -1);
+                transpose(NegImgs[i], NegImgs[i]);
+                break;
+              case 6:
+                flip(NegImgs[i], NegImgs[i], -1);
+                flip(NegImgs[i], NegImgs[i], 1);
+                break;
+              case 7:
+                flip(NegImgs[i], NegImgs[i], 0);
+                transpose(NegImgs[i], NegImgs[i]);
+                flip(NegImgs[i], NegImgs[i], 1);
+                break;
+              default:
+                printf("error type!\n");
+                break;
+            }
           }
         }
         else{
-          switch(tranType[i]){
-            case 0:
-              break;
-            case 1:
-              flip(NegImgs[i], NegImgs[i], 0);
-              transpose(NegImgs[i], NegImgs[i]);
-              break;
-            case 2:
-              flip(NegImgs[i], NegImgs[i], -1);
-              break;
-            case 3:
-              flip(NegImgs[i], NegImgs[i], 1);
-              transpose(NegImgs[i], NegImgs[i]);
-              break;
-            case 4:
-              flip(NegImgs[i], NegImgs[i], 1);
-              break;
-            case 5:
-              flip(NegImgs[i], NegImgs[i], -1);
-              transpose(NegImgs[i], NegImgs[i]);
-              break;
-            case 6:
-              flip(NegImgs[i], NegImgs[i], -1);
-              flip(NegImgs[i], NegImgs[i], 1);
-              break;
-            case 7:
-              flip(NegImgs[i], NegImgs[i], 0);
-              transpose(NegImgs[i], NegImgs[i]);
-              flip(NegImgs[i], NegImgs[i], 1);
-              break;
-            default:
-              printf("error type!\n");
-              break;
-          }
+          Mat tmg = imread(list[current_id[i]],CV_LOAD_IMAGE_GRAYSCALE);
+          NegImgs[i] = tmg.clone();
         }
       }
     }
