@@ -1,6 +1,7 @@
 {
     "T": 5,
     "K": 1080,
+    "Threads": 14,
     "landmark_n": 27,
     "tree_depth": 4,
     "random_shift": 0.02,

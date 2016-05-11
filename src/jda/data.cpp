@@ -612,7 +612,6 @@ void DataSet::LoadNegativeDataSet(const vector<string>& negative,int pos_size) {
         last_scores.push_back(score);
         gets ++;
       }
-      LOG("%d",gets);
     }
     size = imgs.size();
     fclose(file);
