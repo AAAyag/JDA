@@ -315,13 +315,15 @@ void Cart::SplitNodeWithRegression(const DataSet& pos, const vector<int>& pos_id
     right_x.reserve(pos_n); right_y.reserve(pos_n);
     int threshold_ = pos_feature_sorted(0, int(pos_n*rng.uniform(0.1, 0.9)));
     for (int j = 0; j < pos_n; j++) {
-      if (pos_feature(i, j) <= threshold_) {
-        left_x.push_back(shape_residual(j, 0));
-        left_y.push_back(shape_residual(j, 1));
-      }
-      else {
-        right_x.push_back(shape_residual(j, 0));
-        right_y.push_back(shape_residual(j, 1));
+      if(!isnan(shape_residual(j, 0))){
+        if (pos_feature(i, j) <= threshold_) {
+          left_x.push_back(shape_residual(j, 0));
+          left_y.push_back(shape_residual(j, 1));
+        }
+        else {
+          right_x.push_back(shape_residual(j, 0));
+          right_y.push_back(shape_residual(j, 1));
+        }
       }
     }
     double variance_ = (calcVariance(left_x) + calcVariance(left_y))*left_x.size() + \

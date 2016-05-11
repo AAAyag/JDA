@@ -72,7 +72,18 @@ Mat_<double> DataSet::CalcShapeResidual(const vector<int>& idx) const {
   omp_set_num_threads(c.numThreads);
   #pragma omp parallel for
   for (int i = 0; i < n; i++) {
-    shape_residual.row(i) = gt_shapes[idx[i]] - current_shapes[idx[i]];
+    for(int j = 0; j < landmark_n; j++){
+      if(isnan(gt_shapes[idx[i]](0, 2 * j))){
+        shape_residual(i, 2 * j) = gt_shapes[idx[i]](0, 2 * j);
+        shape_residual(i, 2 * j + 1) = gt_shapes[idx[i]](0, 2 * j+1);
+      }
+      else{
+        shape_residual(i, 2 * j) = gt_shapes[idx[i]](0, 2 * j) - \
+                                   current_shapes[idx[i]](0, 2 * j);
+        shape_residual(i, 2 * j + 1) = gt_shapes[idx[i]](0, 2 * j+1) - \
+                                   current_shapes[idx[i]](0, 2 * j + 1);
+      }
+    }
   }
   return shape_residual;
 }
@@ -86,21 +97,41 @@ Mat_<double> DataSet::CalcShapeResidual(const vector<int>& idx, int landmark_id)
   omp_set_num_threads(c.numThreads);
   #pragma omp parallel for
   for (int i = 0; i < n; i++) {
+    if(isnan(gt_shapes[idx[i]](0, 2 * landmark_id))){
+      shape_residual(i, 0) = gt_shapes[idx[i]](0, 2 * landmark_id);
+      shape_residual(i, 1) = gt_shapes[idx[i]](0, 2 * landmark_id + 1);
+    }
+    else{
     shape_residual(i, 0) = gt_shapes[idx[i]](0, 2 * landmark_id) - \
                            current_shapes[idx[i]](0, 2 * landmark_id);
     shape_residual(i, 1) = gt_shapes[idx[i]](0, 2 * landmark_id + 1) - \
                            current_shapes[idx[i]](0, 2 * landmark_id + 1);
+    }
   }
   return shape_residual;
 }
 
 Mat_<double> DataSet::CalcMeanShape() {
   mean_shape = gt_shapes[0].clone();
+  int landmark_n = gt_shapes[0].cols/2;
+  vector<int> NanNum(landmark_n);
+
   const int n = gt_shapes.size();
   for (int i = 1; i < n; i++) {
-    mean_shape += gt_shapes[i];
+    for(int j = 0; j < landmark_n; j++){
+      if(isnan(gt_shapes[i](0, 2 * j)))
+        NanNum[j]++;
+      else{
+        mean_shape(0, 2 * j) += gt_shapes[i](0, 2 * j);
+        mean_shape(0, 2 * j + 1) += gt_shapes[i](0, 2 * j + 1);
+      }
+    }
   }
-  mean_shape /= n;
+  for(int j = 0; j < landmark_n; j++){
+    mean_shape(0, 2 * j) /= n-NanNum[j];
+    mean_shape(0, 2 * j + 1) /= n-NanNum[j];
+  }
+
   return mean_shape;
 }
 
@@ -538,8 +569,14 @@ void DataSet::LoadPositiveDataSet(const string& positive) {
     Mat face = getFace(origin, bboxes[i]);
     // relocate landmarks
     for (int j = 0; j < landmark_n; j++) {
-      gt_shapes[i](0, 2 * j) = (gt_shapes[i](0, 2 * j) - bboxes[i].x) / bboxes[i].width;
-      gt_shapes[i](0, 2 * j + 1) = (gt_shapes[i](0, 2 * j + 1) - bboxes[i].y) / bboxes[i].height;
+      if(!isnan(gt_shapes[i](0, 2 * j))){
+        gt_shapes[i](0, 2 * j) = (gt_shapes[i](0, 2 * j) - bboxes[i].x) / bboxes[i].width;
+        gt_shapes[i](0, 2 * j + 1) = (gt_shapes[i](0, 2 * j + 1) - bboxes[i].y) / bboxes[i].height;
+      }
+      else{
+        gt_shapes[i](0, 2 * j) = gt_shapes[i](0, 2 * j);
+        gt_shapes[i](0, 2 * j + 1) = gt_shapes[i](0, 2 * j + 1);
+      }
     }
     Mat img, half, quarter; // should be defined here due to the memory manager by OpenCV Mat
     cv::resize(face, img, Size(c.img_o_size, c.img_o_size));
