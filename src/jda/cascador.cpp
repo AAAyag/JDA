@@ -262,13 +262,13 @@ static void detectMultiScale(const JoinCascador& joincascador, const Mat& img, \
                              vector<Rect>& rects, vector<double>& scores, \
                              vector<Mat_<double> >& shapes, DetectionStatisic& statisic) {
   const Config& c = Config::GetInstance();
-  const int win_w = c.img_o_size;
-  const int win_h = c.img_o_size;
+  const int win_w = c.img_q_size;
+  const int win_h = c.img_q_size;
   int width = img.cols;
   int height = img.rows;
   const double factor = c.fddb_scale_factor;
   double scale = 1.;
-  const int step = c.fddb_step;
+  int step = c.fddb_step;
   Mat img_ = img.clone();
 
   rects.clear();
@@ -276,6 +276,10 @@ static void detectMultiScale(const JoinCascador& joincascador, const Mat& img, \
   shapes.clear();
 
   while ((width >= win_w) && (height >= win_h)) {
+    if (win_w>40)
+      step = (int)floor(win_h*0.05);
+    else
+      step = (int)floor(win_h*0.1);
     vector<Rect> rects_;
     vector<double> scores_;
     vector<Mat_<double> > shapes_;
@@ -691,18 +695,18 @@ int JoinCascador::Detect(const Mat& img, vector<Rect>& rects, vector<double>& sc
   int imgWidth = img.cols;
   int imgHeight = img.rows;
 
-  for(int i = 0;i<picked.size();i++){
+  for(int i = 0;i<n;i++){
     int idx = picked[i];
     int delta = floor(Srect[idx]*0.1);
-    int y0 = max(rects_[idx].y - floor(3.0 * delta),0.);
-    int y1 = min(rects_[idx].y + Srect[idx],imgHeight);
-    int x0 = max(rects_[idx].x + floor(0.25 * delta),0.);
-    int x1 = min(rects_[idx].x + Srect[idx] - floor(0.25 * delta),(double)imgWidth);
+    int y0 = max(rects[i].y - floor(3.0 * delta),0.);
+    int y1 = min(rects[i].y + Srect[idx],imgHeight);
+    int x0 = max(rects[i].x + floor(0.25 * delta),0.);
+    int x1 = min(rects[i].x + Srect[idx] - floor(0.25 * delta),(double)imgWidth);
 
-    rects_[idx].y = y0;
-    rects_[idx].x = x0;
-    rects_[idx].width = x1-x0 + 1;
-    rects_[idx].height = y1-y0 + 1;
+    rects[i].y = y0;
+    rects[i].x = x0;
+    rects[i].width = x1-x0 + 1;
+    rects[i].height = y1-y0 + 1;
   }
 
   return n;
