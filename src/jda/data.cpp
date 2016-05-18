@@ -349,7 +349,11 @@ void DataSet::Dump(const string& dir) const {
   for (int i = 0; i < size; i++) {
     char buff[300];
     sprintf(buff, "%s/%06d.jpg", dir.c_str(), i);
-    Mat img = drawShape(imgs[i], current_shapes[i] * Config::GetInstance().img_o_size);
+    Mat img;
+    if(is_pos)
+      img = drawShape(imgs[i], current_shapes[i] * Config::GetInstance().img_o_size);
+    else
+      img = imgs[i];
     cv::imwrite(buff, img);
   }
 }

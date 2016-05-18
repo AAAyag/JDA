@@ -383,10 +383,12 @@ static void detectMultiScale1(const JoinCascador& joincascador, const Mat& img, 
  */
 /*
 static vector<int> nms(const vector<Rect>& rects, const vector<double>& scores, \
-                       vector<int>& Srect, double overlap) {
+                       vector<int>& Srect, double overlap, Mat Img, vector<Mat_<double> >& shapes) {
   const int n = rects.size();
   vector<double> areas(n);
 
+  for(int i = 0;i<n;i++)
+    Srect.push_back(rects[i].width);
   typedef std::multimap<double, int> ScoreMapper;
   ScoreMapper map;
   for (int i = 0; i < n; i++) {
