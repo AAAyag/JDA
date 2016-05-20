@@ -144,7 +144,7 @@ void BoostCart::Train(DataSet& pos, DataSet& neg) {
   for (int k = start_of_cart; k < K; k++) {
     const int kk = k + 1;
     Cart& cart = carts[k];
-    if (neg.size < neg_th) {
+    if (neg.size < neg_th || stage < 1) {
       neg.MoreNegSamples(pos.size, c.nps[stage]);
       neg_th = int(neg.size * c.mining_th);
     }
