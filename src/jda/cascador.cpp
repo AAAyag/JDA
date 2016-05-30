@@ -381,7 +381,7 @@ static void detectMultiScale1(const JoinCascador& joincascador, const Mat& img, 
  * \param overlap   overlap threshold
  * \return          picked index
  */
-/*
+
 static vector<int> nms(const vector<Rect>& rects, const vector<double>& scores, \
                        vector<int>& Srect, double overlap, Mat Img, vector<Mat_<double> >& shapes) {
   const int n = rects.size();
@@ -427,7 +427,7 @@ static vector<int> nms(const vector<Rect>& rects, const vector<double>& scores, 
   picked.resize(picked_n);
   return picked;
 }
-*/
+/*
 vector<double> Logistic(vector<double> scores ,vector<int> index);
 int Partation(Mat predicate,vector<int>& label);
 int Find(vector<int>& parent,int x);
@@ -644,7 +644,7 @@ int Find(vector<int>& parent,int x){
     root = Find(parent,root);
   return root;
 }
-
+*/
 int JoinCascador::Detect(const Mat& img, vector<Rect>& rects, vector<double>& scores, \
                          vector<Mat_<double> >& shapes, DetectionStatisic& statisic) const {
   const Config& c = Config::GetInstance();
